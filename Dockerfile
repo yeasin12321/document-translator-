@@ -1,24 +1,24 @@
-# Python 3.10 image ব্যবহার করা হচ্ছে
-FROM python:3.10-slim
+# নতুন এবং স্টেবল ভার্সন ব্যবহার করছি
+FROM python:3.11-slim
 
-# কাজের ফোল্ডার সেট করা
+# যাতে ইন্সটল করার সময় কোনো প্রশ্ন না করে (Yes/No prompt)
+ENV DEBIAN_FRONTEND=noninteractive
+
 WORKDIR /app
 
-# সিস্টেম আপডেট করা এবং Tesseract OCR ইন্সটল করা (অত্যাবশ্যকীয় ধাপ)
-RUN apt-get update && apt-get install -y \
+# সিস্টেম প্যাকেজ আপডেট এবং Tesseract ইন্সটল
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
     build-essential \
-    curl \
-    software-properties-common \
-    git \
     tesseract-ocr \
     libtesseract-dev \
     && rm -rf /var/lib/apt/lists/*
 
-# ফাইলগুলো কপি করা
+# ফাইল কপি করা
 COPY . .
 
-# Python লাইব্রেরি ইন্সটল করা
-RUN pip3 install -r requirements.txt
+# পাইথন লাইব্রেরি ইন্সটল
+RUN pip install --no-cache-dir -r requirements.txt
 
 # পোর্ট ওপেন করা
 EXPOSE 8501
