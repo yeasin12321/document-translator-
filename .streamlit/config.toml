@@ -3,7 +3,12 @@ showErrorDetails = false
 toolbarMode = "viewer"
 
 [theme]
-base = "light"
+base = "dark"
+primaryColor = "#FFD700"
+backgroundColor = "#0F1116"
+secondaryBackgroundColor = "#1E212B"
+textColor = "#EAEAEA"
+font = "sans serif"
 
 [ui]
-hideTopBar = false
+hideTopBar = true
