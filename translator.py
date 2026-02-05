@@ -4,19 +4,21 @@ from docx import Document
 import PyPDF2
 from PIL import Image
 import pytesseract
+from gtts import gTTS
+from io import BytesIO
+from reportlab.lib.pagesizes import letter
+from reportlab.pdfgen import canvas
+import textwrap
 
-# 1. Page Configuration (Title and Icon)
-st.set_page_config(page_title="Yeasin Elite Translator", layout="centered", page_icon="💎")
+# 1. Page Configuration
+st.set_page_config(page_title="Elite Translator", layout="centered", page_icon="💎")
 
-# 2. LUXURY DESIGN CSS (Custom Styling)
+# 2. LUXURY DESIGN CSS
 st.markdown("""
     <style>
-    /* মেইন ব্যাকগ্রাউন্ড - প্রিমিয়াম গ্রেডিয়েন্ট */
     .stApp {
         background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
     }
-    
-    /* টাইটেল ডিজাইন (গোল্ডেন ইফেক্ট) */
     h1 {
         color: #FFD700 !important;
         text-align: center;
@@ -25,16 +27,12 @@ st.markdown("""
         font-weight: 700;
         margin-bottom: 10px;
     }
-    
-    /* সাব-হেডার ডিজাইন */
     h3 {
         color: #E0E0E0 !important;
         text-align: center;
         font-weight: 300;
         font-size: 1.2rem;
     }
-    
-    /* বাটন ডিজাইন (গোল্ডেন গ্রেডিয়েন্ট) */
     .stButton>button {
         width: 100%;
         background: linear-gradient(90deg, #D4AF37 0%, #C5A028 100%);
@@ -48,50 +46,37 @@ st.markdown("""
         transition: all 0.3s ease;
         letter-spacing: 1px;
     }
-    
     .stButton>button:hover {
         transform: translateY(-2px);
         box-shadow: 0 6px 20px rgba(212, 175, 55, 0.6);
         background: linear-gradient(90deg, #F1D06E 0%, #D4AF37 100%);
         color: #000000;
     }
-    
-    /* ফাইল আপলোডার বক্স ডিজাইন */
     .stFileUploader {
         border: 2px dashed #D4AF37;
         border-radius: 10px;
         padding: 20px;
         background-color: rgba(0, 0, 0, 0.2);
     }
-    
-    /* টেক্সট এরিয়া (ইনপুট/আউটপুট বক্স) */
     .stTextArea>div>div>textarea {
         background-color: #1E212B;
         color: #ffffff;
         border: 1px solid #D4AF37;
         border-radius: 8px;
     }
-    
-    /* সাইডবার ডিজাইন */
     section[data-testid="stSidebar"] {
         background-color: #0b0c10;
         border-right: 1px solid #333;
     }
-    
-    /* ডাউনলোড বাটন স্পেশাল ইফেক্ট */
-    .stDownloadButton>button {
-        background: transparent;
-        border: 2px solid #FFD700;
-        color: #FFD700;
-    }
-    .stDownloadButton>button:hover {
-        background: #FFD700;
-        color: black;
+    /* অডিও প্লেয়ার ডিজাইন */
+    .stAudio {
+        margin-top: 10px;
+        margin-bottom: 10px;
     }
     </style>
     """, unsafe_allow_html=True)
 
-# 3. Helper Functions (PDF, DOCX, IMAGE)
+# 3. Helper Functions
 def read_pdf(file):
     try:
         pdf_reader = PyPDF2.PdfReader(file)
@@ -125,7 +110,43 @@ def read_image(file):
         st.error(f"Error reading Image: {e}")
         return None
 
-# 4. App Interface Logic
+# PDF Generator Function
+def create_pdf(text):
+    buffer = BytesIO()
+    c = canvas.Canvas(buffer, pagesize=letter)
+    width, height = letter
+    
+    # Font setup (Standard Helvetica)
+    c.setFont("Helvetica", 12)
+    
+    # Text wrapping logic
+    margin = 40
+    text_width = width - 2 * margin
+    y_position = height - margin
+    
+    # Wrap text manually
+    lines = []
+    for paragraph in text.split('\n'):
+        lines.extend(textwrap.wrap(paragraph, width=90)) # Adjust width based on font size
+    
+    for line in lines:
+        if y_position < margin: # New page if out of space
+            c.showPage()
+            c.setFont("Helvetica", 12)
+            y_position = height - margin
+        
+        # Note: Standard PDF libraries struggle with Bangla unicode without custom fonts
+        try:
+            c.drawString(margin, y_position, line)
+        except:
+            c.drawString(margin, y_position, "Error: Character not supported in PDF mode")
+        y_position -= 15 # Line spacing
+        
+    c.save()
+    buffer.seek(0)
+    return buffer
+
+# 4. App Interface
 st.title("💎 Premium Doc Translator")
 st.markdown("### Transform your documents with AI-powered translation")
 st.write("---")
@@ -133,7 +154,6 @@ st.write("---")
 # Sidebar
 with st.sidebar:
     st.header("⚙️ Settings")
-    st.markdown("Customize your translation preference.")
     
     lang_options = {
         'Bangla': 'bn',
@@ -157,20 +177,17 @@ with st.sidebar:
 uploaded_file = st.file_uploader("Upload File", type=['pdf', 'docx', 'txt', 'png', 'jpg', 'jpeg'])
 
 if uploaded_file is not None:
-    # Show image preview if applicable
     if uploaded_file.name.lower().endswith(('.png', '.jpg', '.jpeg')):
         st.image(uploaded_file, caption="Uploaded Image", use_container_width=True)
     else:
         st.success(f"📂 File Uploaded: {uploaded_file.name}")
 
-    st.write("") # Spacer
+    st.write("") 
     
-    # Translate Button
     if st.button("✨ Translate Document Now"):
         file_text = ""
         
-        with st.spinner('Processing & Translating... Please wait...'):
-            # Text Extraction Logic
+        with st.spinner('Processing & Translating...'):
             if uploaded_file.name.endswith('.pdf'):
                 file_text = read_pdf(uploaded_file)
             elif uploaded_file.name.endswith('.docx'):
@@ -182,7 +199,7 @@ if uploaded_file is not None:
         
         if file_text and file_text.strip():
             try:
-                # Translation Logic with Chunking
+                # Translation Chunking
                 chunk_size = 4000
                 chunks = [file_text[i:i+chunk_size] for i in range(0, len(file_text), chunk_size)]
                 
@@ -197,18 +214,47 @@ if uploaded_file is not None:
                         translated_full_text += translated_part + " "
                     progress_bar.progress((idx + 1) / len(chunks))
                 
-                # Success & Output
+                # --- RESULT SECTION ---
                 st.success("Translation Complete! 🎉")
-                st.markdown("### ✅ Translated Result")
-                st.text_area("", translated_full_text, height=300)
                 
-                # Download Button
-                st.download_button(
-                    label="⬇️ Download Translation (.txt)",
-                    data=translated_full_text,
-                    file_name=f"translated_{uploaded_file.name}.txt",
-                    mime="text/plain"
-                )
+                # 1. Text Preview
+                st.markdown("### ✅ Translated Text")
+                st.text_area("", translated_full_text, height=250)
+                
+                # 2. Audio Player Feature
+                st.markdown("### 🔊 Listen to Translation")
+                try:
+                    tts = gTTS(text=translated_full_text, lang=target_lang_code, slow=False)
+                    audio_buffer = BytesIO()
+                    tts.write_to_fp(audio_buffer)
+                    st.audio(audio_buffer, format='audio/mp3')
+                except Exception as e:
+                    st.warning("Audio not available for this length or language.")
+
+                # 3. Download Options (TXT & PDF)
+                st.markdown("### ⬇️ Download Options")
+                col1, col2 = st.columns(2)
+                
+                with col1:
+                    st.download_button(
+                        label="📄 Download as .TXT",
+                        data=translated_full_text,
+                        file_name=f"translated_{uploaded_file.name}.txt",
+                        mime="text/plain"
+                    )
+                
+                with col2:
+                    # PDF only works well for English/Latin scripts
+                    if target_lang_code in ['en', 'es', 'fr', 'de', 'it']:
+                        pdf_data = create_pdf(translated_full_text)
+                        st.download_button(
+                            label="📑 Download as .PDF",
+                            data=pdf_data,
+                            file_name=f"translated_{uploaded_file.name}.pdf",
+                            mime="application/pdf"
+                        )
+                    else:
+                        st.warning("⚠️ PDF Download is available for English/Latin languages only (to avoid font errors). Please use TXT for Bangla/Hindi.")
                 
             except Exception as e:
                 st.error(f"Translation failed: {e}")
