@@ -1,0 +1,9 @@
+[client]
+showErrorDetails = false
+toolbarMode = "viewer"
+
+[theme]
+base = "light"
+
+[ui]
+hideTopBar = false
