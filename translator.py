@@ -11,7 +11,7 @@ from reportlab.pdfgen import canvas
 import textwrap
 
 # 1. Page Configuration
-st.set_page_config(page_title="Elite Translator", layout="centered", page_icon="💎")
+st.set_page_config(page_title="Yeain Elite Translator", layout="centered", page_icon="💎")
 
 # 2. LUXURY DESIGN CSS
 st.markdown("""
